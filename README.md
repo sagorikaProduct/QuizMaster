@@ -27,10 +27,11 @@
 ## Live Demo
 
 You can access the live demo of **QuizMaster** here:  
-[QuizMaster Live Demo](https://yourusername.github.io/QuizMaster/)
+[QuizMaster Live Demo]( https://sagorikaproduct.github.io/QuizMaster/)
 
 ## Technologies Used
 
 - HTML5
 - CSS3 (Flexbox & Grid, Gradient Backgrounds)
 - JavaScript (Vanilla JS, DOM Manipulation)
+

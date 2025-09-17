@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QuizMaster — Full Quiz</title>
+<style>
+body{font-family:Arial,sans-serif;background:#f5f6fa;display:flex;justify-content:center;align-items:center;min-height:100vh;padding:20px}
+.quiz-container{background:#fff;padding:30px;border-radius:15px;max-width:700px;width:100%;box-shadow:0 10px 25px rgba(0,0,0,0.1);position:relative}
+.logo{font-size:2rem;font-weight:bold;margin-bottom:20px;text-align:center;background:linear-gradient(to right,#667eea,#764ba2);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.theme-selection h2{margin-bottom:10px}
+.theme-selector{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:20px}
+.theme-btn{padding:12px 16px;border:none;border-radius:10px;font-size:16px;cursor:pointer;color:#fff;background:linear-gradient(to right,#667eea,#764ba2);transition:transform 0.2s}
+.theme-btn:hover{transform:translateY(-3px)}
+.quiz-content{display:none}
+.progress-bar{height:8px;background:#eee;border-radius:6px;margin-bottom:12px;overflow:hidden}
+.progress-fill{height:100%;width:0;background:linear-gradient(to right,#667eea,#764ba2);transition:width 0.3s}
+.quiz-info{display:flex;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap}
+.question-counter,.score{font-weight:bold;color:#333}
+.timer{font-weight:bold;color:#ff4d4d}
+.question-card{background:#f7f9fc;padding:20px;border-radius:12px;margin-bottom:12px;box-shadow:0 5px 15px rgba(0,0,0,0.05)}
+.options{display:grid;gap:10px;margin-top:10px}
+.option{padding:12px 15px;border:2px solid #ddd;border-radius:10px;cursor:pointer;background:#fff;transition:all 0.15s;text-align:left}
+.option:hover{background:#f0f0f0}
+.option.correct{background:#2ecc71;color:#fff;border-color:#2ecc71}
+.option.wrong{background:#ff6b6b;color:#fff;border-color:#ff6b6b}
+.actions{display:flex;justify-content:space-between;margin-top:15px}
+.next-btn,.back-btn,.restart-btn{padding:10px 18px;border:none;border-radius:20px;color:#fff;font-weight:bold;cursor:pointer;background:linear-gradient(to right,#667eea,#764ba2);transition:transform 0.2s}
+.next-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.next-btn:hover,.back-btn:hover,.restart-btn:hover{transform:translateY(-2px)}
+.result-screen{display:none;text-align:center}
+.result-title{font-size:2rem;margin-bottom:10px}
+.final-score{font-size:1.5rem;margin-bottom:8px;font-weight:bold;color:#2ecc71}
+.result-message{margin-bottom:15px;color:#333}
+</style>
+</head>
+<body>
+<div class="quiz-container">
+  <div class="logo">🧠 QuizMaster</div>
+  <div class="theme-selection">
+    <h2>Choose Your Quiz Theme</h2>
+    <div class="theme-selector">
+      <button class="theme-btn" onclick="startQuiz('tech')">💻 Tech</button>
+      <button class="theme-btn" onclick="startQuiz('movies')">🎬 Movies</button>
+      <button class="theme-btn" onclick="startQuiz('general')">🌍 General</button>
+      <button class="theme-btn" onclick="startQuiz('sports')">⚽ Sports</button>
+      <button class="theme-btn" onclick="startQuiz('bollywood')">🎥 Bollywood</button>
+    </div>
+  </div>
+
+  <div class="quiz-content">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="quiz-info">
+      <div class="question-counter">Q <span id="current">1</span>/<span id="total">15</span></div>
+      <div class="score">Score: <span id="score">0</span></div>
+      <div class="timer" id="timer">15</div>
+    </div>
+    <div class="question-card">
+      <div class="question" id="question">Question here</div>
+      <div class="options" id="options"></div>
+      <div class="actions">
+        <button id="backBtn" class="back-btn" onclick="backQuestion()">Back</button>
+        <button id="nextBtn" class="next-btn" onclick="nextQuestion()" disabled>Next</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="result-screen">
+    <div class="result-title">🎉 Quiz Finished!</div>
+    <div class="final-score" id="finalScore"></div>
+    <div class="result-message" id="resultMessage"></div>
+    <button class="restart-btn" onclick="restartQuiz()">Play Again</button>
+  </div>
+</div>
+
+<script>
+// ---------------- Quiz Data (Sample 15 per category, extend to 50 as needed) ----------------
+const quizData = {
+tech:[
+{question:"HTML stands for?",options:["Hyper Text Markup Language","Home Tool Markup Language","Hyperlinks Text Mark Language","Hyperlinking Text Markup Language"],correct:0},
+{question:"CSS stands for?",options:["Cascading Style Sheets","Creative Style Sheets","Computer Style Sheets","Colorful Style Sheets"],correct:0},
+{question:"Python is a?",options:["Programming Language","Snake","Coffee","Operating System"],correct:0},
+{question:"First computer virus was called?",options:["Creeper","ILOVEYOU","Morris","Stuxnet"],correct:0},
+{question:"Which company developed Java?",options:["Sun Microsystems","Apple","Microsoft","Google"],correct:0},
+{question:"RAM stands for?",options:["Random Access Memory","Read Access Memory","Run Access Memory","Read And Memory"],correct:0},
+{question:"Which protocol is used for secure internet communication?",options:["HTTPS","HTTP","FTP","SMTP"],correct:0},
+{question:"Bootstrap is a?",options:["CSS Framework","Programming Language","Database","Web Server"],correct:0},
+{question:"Which language is used for Android apps?",options:["Java","Python","C++","Swift"],correct:0},
+{question:"Git is used for?",options:["Version Control","Database","Networking","Programming"],correct:0},
+{question:"Linux is a?",options:["Operating System","Browser","IDE","Software"],correct:0},
+{question:"React is a?",options:["JS Library","CSS Framework","Programming Language","IDE"],correct:0},
+{question:"Which company developed Windows?",options:["Microsoft","Apple","IBM","Google"],correct:0},
+{question:"IP stands for?",options:["Internet Protocol","Internal Protocol","Intelligent Protocol","Information Protocol"],correct:0},
+{question:"DNS stands for?",options:["Domain Name System","Data Name Server","Domain Number Service","Digital Name System"],correct:0},
+],
+movies:[
+{question:"Who directed Inception?",options:["Christopher Nolan","James Cameron","Steven Spielberg","Martin Scorsese"],correct:0},
+{question:"The movie 'Parasite' is from which country?",options:["South Korea","Japan","China","Thailand"],correct:0},
+{question:"Who played Jack in Titanic?",options:["Leonardo DiCaprio","Brad Pitt","Tom Cruise","Johnny Depp"],correct:0},
+{question:"Which film won Best Picture in 2020 Oscars?",options:["Parasite","1917","Joker","Once Upon a Time in Hollywood"],correct:0},
+{question:"The Avengers is part of which universe?",options:["Marvel","DC","Star Wars","Harry Potter"],correct:0},
+{question:"Who played Joker in 'The Dark Knight'?",options:["Heath Ledger","Joaquin Phoenix","Jack Nicholson","Jared Leto"],correct:0},
+{question:"Movie 'Gladiator' released in?",options:["2000","1999","2002","2001"],correct:0},
+{question:"Director of 'Titanic'?",options:["James Cameron","Steven Spielberg","Christopher Nolan","Martin Scorsese"],correct:0},
+{question:"'Forrest Gump' lead actor?",options:["Tom Hanks","Brad Pitt","Leonardo DiCaprio","Johnny Depp"],correct:0},
+{question:"Movie 'Avatar' released in?",options:["2009","2008","2010","2011"],correct:0},
+{question:"Which movie has the highest gross worldwide?",options:["Avatar","Avengers: Endgame","Titanic","Star Wars"],correct:0},
+{question:"Who directed 'Interstellar'?",options:["Christopher Nolan","James Cameron","Steven Spielberg","Ridley Scott"],correct:0},
+{question:"Which movie won Best Animated Feature in 2019?",options:["Spider-Man: Into the Spider-Verse","Incredibles 2","Coco","Frozen 2"],correct:0},
+{question:"Who played Tony Stark?",options:["Robert Downey Jr.","Chris Hemsworth","Chris Evans","Mark Ruffalo"],correct:0},
+{question:"Movie 'Joker' lead actor?",options:["Joaquin Phoenix","Jared Leto","Heath Ledger","Jack Nicholson"],correct:0},
+],
+general:[
+{question:"Capital of Australia?",options:["Canberra","Sydney","Melbourne","Brisbane"],correct:0},
+{question:"Who wrote 'Hamlet'?",options:["William Shakespeare","Charles Dickens","J.K. Rowling","Leo Tolstoy"],correct:0},
+{question:"Chemical symbol of Gold?",options:["Au","Ag","Gd","Go"],correct:0},
+{question:"Largest planet in our Solar System?",options:["Jupiter","Saturn","Earth","Neptune"],correct:0},
+{question:"The Great Wall is located in?",options:["China","India","Japan","Korea"],correct:0},
+{question:"Speed of light is?",options:["299,792 km/s","150,000 km/s","300,000 km/s","250,000 km/s"],correct:0},
+{question:"Who painted Mona Lisa?",options:["Leonardo da Vinci","Michelangelo","Raphael","Donatello"],correct:0},
+{question:"Water's chemical formula?",options:["H2O","CO2","NaCl","O2"],correct:0},
+{question:"Which gas do humans breathe in?",options:["Oxygen","Carbon Dioxide","Nitrogen","Hydrogen"],correct:0},
+{question:"Smallest prime number?",options:["2","1","3","0"],correct:0},
+{question:"Currency of USA?",options:["Dollar","Euro","Pound","Rupee"],correct:0},
+{question:"Longest river in the world?",options:["Nile","Amazon","Yangtze","Mississippi"],correct:0},
+{question:"Who discovered gravity?",options:["Isaac Newton","Albert Einstein","Galileo","Tesla"],correct:0},
+{question:"Mount Everest located in?",options:["Nepal","India","China","Bhutan"],correct:0},
+{question:"Which element has atomic number 1?",options:["Hydrogen","Helium","Oxygen","Nitrogen"],correct:0},
+],
+sports:[
+{question:"Which country won FIFA World Cup 2018?",options:["France","Croatia","Brazil","Germany"],correct:0},
+{question:"Sachin Tendulkar is associated with which sport?",options:["Cricket","Football","Hockey","Badminton"],correct:0},
+{question:"How many players in a football team?",options:["11","10","12","9"],correct:0},
+{question:"Olympics 2020 held in?",options:["Tokyo","Beijing","London","Rio"],correct:0},
+{question:"Which tennis player has most Grand Slam titles?",options:["Rafael Nadal","Roger Federer","Novak Djokovic","Pete Sampras"],correct:0},
+{question:"Basketball is played with?",options:["Ball","Racket","Stick","Glove"],correct:0},
+{question:"Which country hosts Wimbledon?",options:["UK","USA","France","Australia"],correct:0},
+{question:"Indian Hockey captain 2023?",options:["Manpreet Singh","Sardar Singh","PR Sreejesh","Gurjant Singh"],correct:0},
+{question:"Which sport is called 'king of sports'?",options:["Football","Cricket","Tennis","Hockey"],correct:0},
+{question:"How long is a marathon?",options:["42.195 km","40 km","50 km","30 km"],correct:0},
+{question:"Michael Jordan is famous in?",options:["Basketball","Cricket","Tennis","Football"],correct:0},
+{question:"Number of players in volleyball?",options:["6","5","7","4"],correct:0},
+{question:"Olympics first held in?",options:["1896","1900","1920","1888"],correct:0},
+{question:"Formula 1 racing is associated with?",options:["Motorsport","Cycling","Horse Racing","Swimming"],correct:0},
+{question:"World Cup cricket 2019 winner?",options:["England","India","Australia","New Zealand"],correct:0},
+],
+bollywood:[
+{question:"Who played 'Raj' in DDLJ?",options:["Shah Rukh Khan","Aamir Khan","Salman Khan","Hrithik Roshan"],correct:0},
+{question:"Movie '3 Idiots' directed by?",options:["Rajkumar Hirani","Karan Johar","Imtiaz Ali","Sanjay Leela Bhansali"],correct:0},
+{question:"Song 'Kal Ho Naa Ho' singer?",options:["Sonu Nigam","Arijit Singh","Kishore Kumar","Udit Narayan"],correct:0},
+{question:"Movie 'Bajrangi Bhaijaan' lead actor?",options:["Salman Khan","Shah Rukh Khan","Aamir Khan","Akshay Kumar"],correct:0},
+{question:"Which actor known as 'Mr.Perfectionist'?",options:["Aamir Khan","Shah Rukh Khan","Salman Khan","Ranbir Kapoor"],correct:0},
+{question:"Movie 'Dangal' lead actress?",options:["Fatima Sana Shaikh","Kareena Kapoor","Deepika Padukone","Alia Bhatt"],correct:0},
+{question:"Director of 'Kabir Singh'?",options:["Sandeep Reddy Vanga","Karan Johar","Rajkumar Hirani","Imtiaz Ali"],correct:0},
+{question:"Movie 'Padmaavat' lead actress?",options:["Deepika Padukone","Kareena Kapoor","Alia Bhatt","Anushka Sharma"],correct:0},
+{question:"Movie 'Barfi!' lead actor?",options:["Ranbir Kapoor","Shah Rukh Khan","Aamir Khan","Salman Khan"],correct:0},
+{question:"Movie 'Andhadhun' lead actor?",options:["Ayushmann Khurrana","Shah Rukh Khan","Aamir Khan","Rajkummar Rao"],correct:0},
+{question:"Movie 'Queen' lead actress?",options:["Kangana Ranaut","Alia Bhatt","Deepika Padukone","Kareena Kapoor"],correct:0},
+{question:"Movie 'PK' lead actor?",options:["Aamir Khan","Shah Rukh Khan","Salman Khan","Ranbir Kapoor"],correct:0},
+{question:"Movie 'Bajrangi Bhaijaan' directed by?",options:["Kabir Khan","Rajkumar Hirani","Imtiaz Ali","Sanjay Leela Bhansali"],correct:0},
+{question:"Movie 'Chhichhore' lead actor?",options:["Sushant Singh Rajput","Shah Rukh Khan","Aamir Khan","Varun Dhawan"],correct:0},
+{question:"Song 'Tum Hi Ho' singer?",options:["Arijit Singh","Sonu Nigam","Udit Narayan","KK"],correct:0},
+]
+};
+
+// ---------------- Quiz State ----------------
+let currentQuiz=[],currentIndex=0,score=0,selectedCategory=null,userAnswers=[];
+let timerId=null,secondsLeft=15;
+
+// ---------------- Functions ----------------
+function shuffleArray(arr){return arr.sort(()=>Math.random()-0.5);}
+function startQuiz(category){
+  selectedCategory=category;
+  currentQuiz=shuffleArray(quizData[category]).slice(0,15); // 15 per play
+  currentIndex=0;score=0;userAnswers=Array(currentQuiz.length).fill(null);
+  document.querySelector('.theme-selection').style.display='none';
+  document.querySelector('.quiz-content').style.display='block';
+  document.querySelector('.result-screen').style.display='none';
+  document.getElementById('total').innerText=currentQuiz.length;
+  loadQuestion();
+}
+
+function loadQuestion(){
+  clearInterval(timerId);
+  secondsLeft=15;
+  document.getElementById('timer').innerText=secondsLeft;
+  const q=currentQuiz[currentIndex];
+  document.getElementById('question').innerText=q.question;
+  const opts=document.getElementById('options');opts.innerHTML='';
+  q.options.forEach((o,i)=>{
+    const btn=document.createElement('button');
+    btn.className='option';
+    btn.innerText=o;
+    if(userAnswers[currentIndex]!==null){btn.disabled=true;if(i===q.correct)btn.classList.add('correct');else if(i===userAnswers[currentIndex])btn.classList.add('wrong');}
+    else{btn.onclick=()=>selectAnswer(i);}
+    opts.appendChild(btn);
+  });
+  document.getElementById('current').innerText=currentIndex+1;
+  document.getElementById('score').innerText=score;
+  document.getElementById('nextBtn').disabled=userAnswers[currentIndex]===null;
+  document.getElementById('backBtn').style.display=currentIndex===0?'none':'inline-block';
+  if(userAnswers[currentIndex]===null)startTimer();
+}
+
+function startTimer(){
+  timerId=setInterval(()=>{
+    secondsLeft--;document.getElementById('timer').innerText=secondsLeft;
+    if(secondsLeft<=0){clearInterval(timerId);userAnswers[currentIndex]=userAnswers[currentIndex]??-1;document.getElementById('nextBtn').disabled=false;}
+  },1000);
+}
+
+function selectAnswer(idx){
+  const q=currentQuiz[currentIndex];
+  userAnswers[currentIndex]=idx;
+  const opts=document.querySelectorAll('.option');
+  opts.forEach((btn,i)=>{btn.disabled=true;if(i===q.correct)btn.classList.add('correct');else if(i===idx)btn.classList.add('wrong');});
+  score+=idx===q.correct?1:0;
+  document.getElementById('score').innerText=score;
+  clearInterval(timerId);
+  document.getElementById('nextBtn').disabled=false;
+}
+
+function nextQuestion(){if(currentIndex<currentQuiz.length-1){currentIndex++;loadQuestion();}else showResult();}
+function backQuestion(){if(currentIndex>0){currentIndex--;loadQuestion();}}
+function showResult(){
+  document.querySelector('.quiz-content').style.display='none';
+  document.querySelector('.result-screen').style.display='block';
+  document.getElementById('finalScore').innerText=`You scored ${score}/${currentQuiz.length}`;
+  document.getElementById('resultMessage').innerText=score===currentQuiz.length?"Perfect score! Amazing!":score>currentQuiz.length/2?"Good job!":"Keep practicing!";
+}
+function restartQuiz(){
+  document.querySelector('.theme-selection').style.display='block';
+  document.querySelector('.quiz-content').style.display='none';
+  document.querySelector('.result-screen').style.display='none';
+}
+</script>
+</body>
+</html>
